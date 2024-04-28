@@ -8,20 +8,22 @@ import FireBaseConfig from './config/firebase.config';
 import { HttpModule } from '@nestjs/axios';
 import { ChatRoomGateway } from './gateways/chat-room.gateway';
 import { ChatService } from './services/chat/chat.service';
+import {MockController} from './controllers/mock.controller';
 
 @Module({
     imports: [HttpModule],
     controllers: [
-        AuthController,
-        UserProfileController,
-        PaymentMethodsController,
+        // AuthController,
+        // UserProfileController,
+        // PaymentMethodsController,
+        MockController,
     ],
     providers: [
-        FireBaseConfig,
-        AuthService,
-        UserProfileService,
-        ChatRoomGateway,
-        ChatService,
+        // FireBaseConfig,
+        // AuthService,
+        // UserProfileService,
+        // ChatRoomGateway,
+        // ChatService,
     ],
 })
 export class AppModule {}
