@@ -8,7 +8,6 @@ import FireBaseConfig from './config/firebase.config';
 import { HttpModule } from '@nestjs/axios';
 import { ChatRoomGateway } from './gateways/chat-room.gateway';
 import { ChatService } from './services/chat/chat.service';
-import { HelloWorldController } from './controllers/hello-world/hello-world.controller';
 
 @Module({
     imports: [HttpModule],
@@ -16,7 +15,6 @@ import { HelloWorldController } from './controllers/hello-world/hello-world.cont
         AuthController,
         UserProfileController,
         PaymentMethodsController,
-        HelloWorldController,
     ],
     providers: [
         FireBaseConfig,
