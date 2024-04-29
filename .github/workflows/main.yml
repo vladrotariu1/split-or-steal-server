@@ -33,6 +33,9 @@ jobs:
       - name: Run ci.sh
         run: chmod +x ci.sh && ./ci.sh
 
+      - name: Log-in to ACR
+        run: az acr login --name splitorstealcontainerregistry
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
