@@ -11,7 +11,7 @@ import { ChatService } from '../services/chat/chat.service';
 import { UserProfileService } from '../services/user-profile/user-profile.service';
 import { MessageDetailsDto } from '../dto/messageDetails.dto';
 
-@WebSocketGateway(3033, {
+@WebSocketGateway({
     cors: {
         origin: '*',
     },
