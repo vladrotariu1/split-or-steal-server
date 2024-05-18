@@ -6,7 +6,7 @@ import {
     PipeTransform,
 } from '@nestjs/common';
 import { Express } from 'express';
-import { FileDto } from '../dto/file.dto';
+import { FileDto } from '../data/dto/file.dto';
 
 export class FileExtensionValidationPipe implements PipeTransform {
     private readonly supportedFileTypes = [

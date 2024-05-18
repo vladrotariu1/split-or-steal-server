@@ -17,9 +17,9 @@ import {
 } from 'firebase/auth';
 import { auth } from 'firebase-admin';
 import FireBaseConfig from '../../config/firebase.config';
-import { CreateUserDto } from '../../dto/create-user.dto';
-import { LoginUserDto } from '../../dto/login-user.dto';
-import { UserDetailsDto } from '../../dto/user-details.dto';
+import { CreateUserDto } from '../../data/dto/create-user.dto';
+import { LoginUserDto } from '../../data/dto/login-user.dto';
+import { UserDetailsDto } from '../../data/dto/user-details.dto';
 
 @Injectable()
 export class AuthService {

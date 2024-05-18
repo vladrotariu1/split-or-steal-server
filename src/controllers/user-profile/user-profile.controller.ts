@@ -1,6 +1,5 @@
 import {
     Controller,
-    Param,
     Put,
     UploadedFile,
     UseGuards,
@@ -10,7 +9,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserProfileService } from '../../services/user-profile/user-profile.service';
 import { FileExtensionValidationPipe } from '../../pipes/file-extension-validation.pipe';
-import { FileDto } from '../../dto/file.dto';
+import { FileDto } from '../../data/dto/file.dto';
 import { VerifyAuthTokenGuard } from '../../guards/verify-auth-token.guard';
 
 @Controller('user-profile')

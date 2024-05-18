@@ -5,3 +5,5 @@ export interface UserDetailsDto {
     userName: string;
     userPhotoUrl: string;
 }
+
+export interface ChatUserDetailsDto extends Pick<UserDetailsDto, 'userId' | 'userName' | 'userPhotoUrl'> {}

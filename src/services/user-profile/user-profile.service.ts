@@ -7,7 +7,7 @@ import {
 } from 'firebase/storage';
 import { auth } from 'firebase-admin';
 import FireBaseConfig from '../../config/firebase.config';
-import { FileDto } from '../../dto/file.dto';
+import { FileDto } from '../../data/dto/file.dto';
 
 @Injectable()
 export class UserProfileService {

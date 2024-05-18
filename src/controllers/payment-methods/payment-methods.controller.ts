@@ -10,7 +10,7 @@ import { HttpService } from '@nestjs/axios';
 import {
     CreatePaymentMethodDto,
     PaymentMethodDto,
-} from '../../dto/payment-method.dto';
+} from '../../data/dto/payment-method.dto';
 import { VerifyAuthTokenGuard } from '../../guards/verify-auth-token.guard';
 
 @Controller('payment-methods')
