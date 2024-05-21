@@ -1,4 +1,4 @@
 export enum SplitOrStealChoices {
-    SPLIT = 'STEAL',
-    STEAL = 'SPLIT',
+    SPLIT = 'SPLIT',
+    STEAL = 'STEAL',
 }

@@ -39,6 +39,7 @@ export class ChatRoomGateway
 
         try {
             const decodedToken = await this.authService.verifyIdToken(token);
+            console.log(decodedToken.uid);
             const roomId = this.chatService.joinNewUser(client, decodedToken.uid);
 
             if (this.chatService.isRoomFull(roomId)) {
@@ -78,14 +79,15 @@ export class ChatRoomGateway
 
         const interval = setTimeout(() => {
             this.endGame(roomId);
-        }, 30 * 1000);
+        }, 2 * 60 * 1000);
 
         this.chatService.addTimeout(roomId, interval);
     }
 
-    endGame(roomId: string) {
+    async endGame(roomId: string) {
         const roomUsers = this.chatService.getRoomUsers(roomId);
-        this.server.to(roomId).emit('end-game');
+        const playerChoices = await this.chatService.getPlayersChoices(roomId);
+        this.server.to(roomId).emit('end-game', playerChoices);
 
         try {
             this.chatService.cancelTimeout(roomId);
@@ -108,6 +110,7 @@ export class ChatRoomGateway
 
     @SubscribeMessage('message')
     async handleMessage(client: Socket, payload: string) {
+        console.log('Emitting new msg');
         const userId = this.chatService.getCorrespondingUserId(client.id);
         const userRecord = await this.userProfileService.findUserById(userId);
         const messageDetails: MessageDetailsDto = {

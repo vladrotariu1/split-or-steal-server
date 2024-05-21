@@ -81,6 +81,28 @@ export class ChatService {
         }
     }
 
+    async getPlayersChoices(roomId: string) {
+        const docRef = this.roomToConversationDocumentMap.get(roomId);
+        const docSnap = await getDoc(docRef);
+
+        const player1Id = docSnap.data().player1Id;
+        const player2Id = docSnap.data().player2Id;
+
+        const player1Choice = docSnap.data().player1Choice || SplitOrStealChoices.STEAL;
+        const player2Choice = docSnap.data().player2Choice || SplitOrStealChoices.STEAL;
+
+        return {
+            player1: {
+                id: player1Id,
+                choice: player1Choice,
+            },
+            player2: {
+                id: player2Id,
+                choice: player2Choice,
+            }
+        }
+    }
+
     removeRoomToConversationMapping(roomId: string) {
         this.roomToConversationDocumentMap.delete(roomId);
     }
