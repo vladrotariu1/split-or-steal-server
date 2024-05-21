@@ -1,36 +1,88 @@
 import {Injectable} from '@nestjs/common';
-import {arrayUnion, doc, DocumentReference, getFirestore, updateDoc,} from 'firebase/firestore';
+import {arrayUnion, doc, DocumentReference, getDoc, getFirestore, updateDoc, setDoc} from 'firebase/firestore';
 import {MessageDetailsDto} from '../../data/dto/message-details.dto';
 import {Socket} from 'socket.io';
 import {UserProfileService} from '../user-profile/user-profile.service';
 import {ChatUserDetailsDto} from '../../data/dto/user-details.dto';
+import {SplitOrStealChoices} from '../../data/enums/split-or-steal-choices';
 
 @Injectable()
 export class ChatService {
-    private readonly messageDocRef: DocumentReference;
     private readonly socketToUserMap: Map<string, string> = new Map();
     private readonly chatRooms: Map<string, string[]> = new Map();
     private readonly socketToChatRoomMap: Map<string, string> = new Map();
+    private readonly roomToTimeoutMap: Map<string, NodeJS.Timeout> = new Map();
+    private readonly roomToConversationDocumentMap: Map<string, DocumentReference> = new Map();
+    private readonly socketToChoiceMapping: Map<string, string> = new Map();
 
-    constructor(private userProfileService: UserProfileService) {
-        this.messageDocRef = doc(
+    constructor(private userProfileService: UserProfileService) {}
+
+    async createConversationDocument(roomId: string) {
+        const conversationDocRef = doc(
             getFirestore(),
             'conversations',
-            'all-users-conversation',
+            crypto.randomUUID(),
         );
+
+        const playerIds = this.chatRooms
+            .get(roomId)
+            .map(socketId => this.socketToUserMap.get(socketId));
+
+        await setDoc(conversationDocRef, {
+            player1Id: playerIds[0],
+            player2Id: playerIds[1],
+            messages: []
+        });
+
+        this.roomToConversationDocumentMap.set(roomId, conversationDocRef);
     }
 
-    async writeMessage(messageDetails: MessageDetailsDto) {
+    async writeMessage(roomId: string, messageDetails: MessageDetailsDto) {
         const messageDto = {
             id: crypto.randomUUID(),
             ...messageDetails,
         };
 
-        await updateDoc(this.messageDocRef, {
+        const conversationDocRef = this.roomToConversationDocumentMap.get(roomId);
+
+        await updateDoc(conversationDocRef, {
             messages: arrayUnion(messageDto),
         });
 
         return messageDto;
+    }
+
+    async writeChoiceToDocument(socketId: string, choice: SplitOrStealChoices) {
+        const clientId = this.socketToUserMap.get(socketId);
+        const roomId = this.socketToChatRoomMap.get(socketId);
+        if (this.isRoomFull(roomId)) {
+            const docRef = this.roomToConversationDocumentMap.get(roomId);
+            const docSnap = await getDoc(docRef);
+            const player1Id = docSnap.data().player1Id;
+            const player2Id = docSnap.data().player2Id;
+
+            let updateObj;
+
+            if (clientId === player1Id) {
+                updateObj = {
+                    player1Choice: choice,
+                }
+            }
+
+            if (clientId === player2Id) {
+                updateObj = {
+                    player2Choice: choice,
+                }
+            }
+
+            await updateDoc(docRef, {
+                ...updateObj
+            });
+        }
+    }
+
+    removeRoomToConversationMapping(roomId: string) {
+        this.roomToConversationDocumentMap.delete(roomId);
     }
 
     addSocketToUserMapping(socketId: string, userId: string) {
@@ -77,6 +129,7 @@ export class ChatService {
         const removedUserArray = currentUsersInTheRoom.filter(id => id !== socketId);
         if (removedUserArray.length === 0) {
             this.chatRooms.delete(roomId);
+            this.removeRoomToConversationMapping(roomId);
         } else {
             this.chatRooms.set(roomId, removedUserArray);
         }
@@ -123,6 +176,25 @@ export class ChatService {
         return room;
     }
 
+    addTimeout(roomId: string, timeout: NodeJS.Timeout) {
+        this.roomToTimeoutMap.set(roomId, timeout);
+    }
+
+    getTimeout(roomId: string) {
+        return this.roomToTimeoutMap.get(roomId);
+    }
+
+    cancelTimeout(roomId: string) {
+        const interval = this.roomToTimeoutMap.get(roomId);
+
+        if (!interval) {
+            throw new Error(`No interval set on room with id ${roomId}`);
+        }
+
+        clearTimeout(interval);
+        this.roomToTimeoutMap.delete(roomId);
+    }
+
     async getRoomUsersDetailsArray(roomId: string) {
         return Promise.all(
             this.chatRooms
@@ -140,5 +212,9 @@ export class ChatService {
                 }
             )
         );
+    }
+
+    async setPlayerChoice(socketId: string, choice: SplitOrStealChoices) {
+        await this.writeChoiceToDocument(socketId, choice);
     }
 }

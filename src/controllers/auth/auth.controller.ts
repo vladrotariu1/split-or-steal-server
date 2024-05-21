@@ -21,4 +21,10 @@ export class AuthController {
     ): Promise<UserDetailsDto> {
         return this.authService.loginUser(loginUserDto);
     }
+
+    @Post('login-with-token')
+    loginWithToken(@Body() { authToken }: { authToken: string }): Promise<UserDetailsDto> {
+        return this.authService.loginUserWithToken(authToken);
+    }
+
 }

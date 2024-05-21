@@ -15,17 +15,18 @@ import {
     signInWithEmailAndPassword,
     UserCredential,
 } from 'firebase/auth';
-import { auth } from 'firebase-admin';
+import {auth} from 'firebase-admin';
 import FireBaseConfig from '../../config/firebase.config';
-import { CreateUserDto } from '../../data/dto/create-user.dto';
-import { LoginUserDto } from '../../data/dto/login-user.dto';
-import { UserDetailsDto } from '../../data/dto/user-details.dto';
+import {CreateUserDto} from '../../data/dto/create-user.dto';
+import {LoginUserDto} from '../../data/dto/login-user.dto';
+import {UserDetailsDto} from '../../data/dto/user-details.dto';
+import {UserProfileService} from '../user-profile/user-profile.service';
 
 @Injectable()
 export class AuthService {
     readonly firebaseAuth: Auth;
 
-    constructor(private firebaseConfig: FireBaseConfig) {
+    constructor(private firebaseConfig: FireBaseConfig, private userProfileService: UserProfileService) {
         this.firebaseAuth = getAuth(firebaseConfig.getFirebaseApp());
     }
 
@@ -55,6 +56,24 @@ export class AuthService {
         }
     }
 
+    async loginUserWithToken(authToken: string): Promise<UserDetailsDto> {
+        try {
+            const decodedToken = await this.verifyIdToken(authToken);
+            const userRecord = await this.userProfileService.findUserById(decodedToken.uid);
+
+            return {
+                accessToken: authToken,
+                email: userRecord.email || null,
+                userId: userRecord.uid || null,
+                userName: userRecord.displayName || null,
+                userPhotoUrl: userRecord.photoURL || null
+            };
+        } catch (e) {
+            console.log(e);
+            throw new BadRequestException('Could not validate token');
+        }
+    }
+
     private async getUserDetails(
         userCredentials: UserCredential,
     ): Promise<UserDetailsDto> {
@@ -68,7 +87,6 @@ export class AuthService {
             userPhotoUrl: userCredentials.user.photoURL,
         };
     }
-
     verifyIdToken(token: string) {
         return auth().verifyIdToken(token);
     }
