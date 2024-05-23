@@ -12,6 +12,8 @@ import { UserProfileService } from '../services/user-profile/user-profile.servic
 import { MessageDetailsDto } from '../data/dto/message-details.dto';
 import {SplitOrStealChoices} from '../data/enums/split-or-steal-choices';
 
+const CHAT_DURATION = 10 * 1000;
+
 @WebSocketGateway({
     cors: {
         origin: '*',
@@ -75,11 +77,11 @@ export class ChatRoomGateway
 
         await this.chatService.createConversationDocument(roomId);
 
-        this.server.emit('start-game', usersDetails);
+        this.server.emit('start-game', { usersDetails, chatDuration: CHAT_DURATION });
 
         const interval = setTimeout(() => {
             this.endGame(roomId);
-        }, 2 * 60 * 1000);
+        }, CHAT_DURATION);
 
         this.chatService.addTimeout(roomId, interval);
     }
