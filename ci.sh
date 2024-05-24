@@ -17,9 +17,14 @@ az storage blob download --account-name splitorstealstorage --container-name spl
 firebase_env_config="firebase-environment-config"
 az storage blob download --account-name splitorstealstorage --container-name split-or-steal-configs --name $firebase_env_config --file secrets/$firebase_env_config
 
+#Download stripe api keys
+stripe_api_keys_file="stripe-api-keys"
+az storage blob download --account-name splitorstealstorage --container-name split-or-steal-configs --name $stripe_api_keys_file --file secrets/$stripe_api_keys_file
+
 # Create the .env file
 cp secrets/$firebase_env_config .env
 echo "SERVICE_ACCOUNT_KEY_FILE_NAME=$firebase_admin_sdk_file_name" >> .env
+cat secrets/$stripe_api_keys_file >> .env
 
 # Build the server app
 npm run build

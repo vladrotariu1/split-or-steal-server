@@ -21,12 +21,19 @@ import {CreateUserDto} from '../../data/dto/create-user.dto';
 import {LoginUserDto} from '../../data/dto/login-user.dto';
 import {UserDetailsDto} from '../../data/dto/user-details.dto';
 import {UserProfileService} from '../user-profile/user-profile.service';
+import StripeConfig from '../../config/stripe.config';
+import {RealtimeDbService} from '../realtime-db/realtime-db.service';
 
 @Injectable()
 export class AuthService {
     readonly firebaseAuth: Auth;
 
-    constructor(private firebaseConfig: FireBaseConfig, private userProfileService: UserProfileService) {
+    constructor(
+        private firebaseConfig: FireBaseConfig,
+        private userProfileService: UserProfileService,
+        private stripeConfig: StripeConfig,
+        private realtimeDbService: RealtimeDbService,
+    ) {
         this.firebaseAuth = getAuth(firebaseConfig.getFirebaseApp());
     }
 
@@ -37,6 +44,14 @@ export class AuthService {
                 createUserDto.email,
                 createUserDto.password,
             );
+
+            const stripeCustomer = await this.stripeConfig.getStripeApp().customers.create({
+                email: createUserDto.email,
+            });
+
+            await this.realtimeDbService.createUserIdToStripeCustomerMapping(userCredentials.user.uid, stripeCustomer.id);
+            await this.realtimeDbService.updateUserBalance(userCredentials.user.uid, 0);
+
             return this.getUserDetails(userCredentials);
         } catch (error) {
             throw this.userCreateExceptionHandler(error);
@@ -107,7 +122,8 @@ export class AuthService {
         }
     }
 
-    private userCreateExceptionHandler(error: AuthError): HttpException {
+    private userCreateExceptionHandler(error: AuthError | any): HttpException {
+        console.log(error);
         switch (error.code) {
             case AuthErrorCodes.EMAIL_EXISTS:
                 return new ConflictException('E-mail already used');

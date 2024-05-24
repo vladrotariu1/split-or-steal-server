@@ -5,7 +5,9 @@ import * as dotenv from 'dotenv';
 
 async function bootstrap() {
     dotenv.config();
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {
+        rawBody: true,
+    });
     app.enableCors();
 
     const config = new DocumentBuilder()

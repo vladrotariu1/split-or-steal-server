@@ -27,12 +27,15 @@
     "@nestjs/platform-socket.io": "^10.3.8",
     "@nestjs/swagger": "^7.3.1",
     "@nestjs/websockets": "^10.3.8",
+    "@types/stripe": "^8.0.417",
     "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
     "dotenv": "^16.4.5",
     "firebase": "^10.9.0",
     "firebase-admin": "^12.0.0",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "stripe": "^15.8.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
