@@ -1,5 +1,6 @@
 export interface UserDetailsDto {
     accessToken: string;
+    balance: number;
     email: string;
     userId: string;
     userName: string;

@@ -1,10 +1,13 @@
 import {Injectable} from '@nestjs/common';
-import {arrayUnion, doc, DocumentReference, getDoc, getFirestore, updateDoc, setDoc} from 'firebase/firestore';
+import {arrayUnion, collection, doc, DocumentReference, getDoc, getFirestore, query, or, setDoc, updateDoc, where} from 'firebase/firestore';
 import {MessageDetailsDto} from '../../data/dto/message-details.dto';
 import {Socket} from 'socket.io';
 import {UserProfileService} from '../user-profile/user-profile.service';
 import {ChatUserDetailsDto} from '../../data/dto/user-details.dto';
 import {SplitOrStealChoices} from '../../data/enums/split-or-steal-choices';
+import {PlayersChoices} from '../../data/dto/players-choices.dto';
+import {GameConfing} from '../../config/game.config';
+import {RealtimeDbService} from '../realtime-db/realtime-db.service';
 
 @Injectable()
 export class ChatService {
@@ -13,9 +16,10 @@ export class ChatService {
     private readonly socketToChatRoomMap: Map<string, string> = new Map();
     private readonly roomToTimeoutMap: Map<string, NodeJS.Timeout> = new Map();
     private readonly roomToConversationDocumentMap: Map<string, DocumentReference> = new Map();
+    private readonly roomPot: Map<string, number> = new Map();
     private readonly socketToChoiceMapping: Map<string, string> = new Map();
 
-    constructor(private userProfileService: UserProfileService) {}
+    constructor(private userProfileService: UserProfileService, private realtimeDbService: RealtimeDbService) {}
 
     async createConversationDocument(roomId: string) {
         const conversationDocRef = doc(
@@ -29,6 +33,7 @@ export class ChatService {
             .map(socketId => this.socketToUserMap.get(socketId));
 
         await setDoc(conversationDocRef, {
+            creationDate: Date.now(),
             player1Id: playerIds[0],
             player2Id: playerIds[1],
             messages: []
@@ -91,7 +96,7 @@ export class ChatService {
         const player1Choice = docSnap.data().player1Choice || SplitOrStealChoices.STEAL;
         const player2Choice = docSnap.data().player2Choice || SplitOrStealChoices.STEAL;
 
-        return {
+        const playersChoices: PlayersChoices = {
             player1: {
                 id: player1Id,
                 choice: player1Choice,
@@ -101,6 +106,23 @@ export class ChatService {
                 choice: player2Choice,
             }
         }
+
+        return playersChoices;
+    }
+
+    addMoneyPotToRoom(roomId: string, balance: number) {
+        const currentBalance = this.roomPot.get(roomId);
+        let newBalance = balance;
+
+        if (currentBalance && currentBalance > 0) {
+            newBalance += currentBalance;
+        }
+
+        this.roomPot.set(roomId, newBalance);
+    }
+
+    deleteRoomPot(roomId: string) {
+        this.roomPot.delete(roomId);
     }
 
     removeRoomToConversationMapping(roomId: string) {
@@ -238,5 +260,42 @@ export class ChatService {
 
     async setPlayerChoice(socketId: string, choice: SplitOrStealChoices) {
         await this.writeChoiceToDocument(socketId, choice);
+    }
+
+    async computePlayersNewBalances(roomId: string, playersChoices: PlayersChoices) {
+        const {player1, player2} = playersChoices;
+        const roomPot = this.roomPot.get(roomId);
+
+        let player1ResultBalance = 0;
+        let player2ResultBalance = 0;
+
+        if (player1.choice === player2.choice && player1.choice === SplitOrStealChoices.STEAL) {
+            const houseTax = roomPot * GameConfing.HOUSE_DOUBLE_STEAL_TAX_PERCENTAGE;
+            const playerLoss = -1 * (houseTax / 2);
+            player1ResultBalance = playerLoss;
+            player2ResultBalance = playerLoss;
+        }
+        else if (player1.choice === player2.choice && player1.choice === SplitOrStealChoices.SPLIT) {
+            const houseBonus = roomPot * GameConfing.HOUSE_SPLIT_BONUS_PERCENTAGE;
+            const playerGain = houseBonus / 2;
+            player1ResultBalance = playerGain;
+            player2ResultBalance = playerGain;
+        }
+        else if (player1.choice === SplitOrStealChoices.STEAL && player2.choice === SplitOrStealChoices.SPLIT) {
+            player1ResultBalance = GameConfing.GAME_TAX;
+            player2ResultBalance = -1 * (GameConfing.GAME_TAX);
+        }
+        else if (player2.choice === SplitOrStealChoices.STEAL && player1.choice === SplitOrStealChoices.SPLIT) {
+            player1ResultBalance = -1 * (GameConfing.GAME_TAX);
+            player2ResultBalance = GameConfing.GAME_TAX;
+        }
+
+        await this.realtimeDbService.updateUserBalance(player1.id, player1ResultBalance, true);
+        await this.realtimeDbService.updateUserBalance(player2.id, player2ResultBalance, true);
+
+        return {
+            player1ResultBalance,
+            player2ResultBalance
+        }
     }
 }

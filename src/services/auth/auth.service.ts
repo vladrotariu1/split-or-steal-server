@@ -75,9 +75,11 @@ export class AuthService {
         try {
             const decodedToken = await this.verifyIdToken(authToken);
             const userRecord = await this.userProfileService.findUserById(decodedToken.uid);
+            const balance = await this.realtimeDbService.getUserBalance(userRecord.uid);
 
             return {
                 accessToken: authToken,
+                balance,
                 email: userRecord.email || null,
                 userId: userRecord.uid || null,
                 userName: userRecord.displayName || null,
@@ -93,9 +95,11 @@ export class AuthService {
         userCredentials: UserCredential,
     ): Promise<UserDetailsDto> {
         const accessToken = await userCredentials.user.getIdToken();
+        const balance = await this.realtimeDbService.getUserBalance(userCredentials.user.uid);
 
         return {
             accessToken: accessToken,
+            balance,
             email: userCredentials.user.email,
             userId: userCredentials.user.uid,
             userName: userCredentials.user.displayName,

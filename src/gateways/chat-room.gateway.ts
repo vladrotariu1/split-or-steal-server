@@ -11,8 +11,7 @@ import { ChatService } from '../services/chat/chat.service';
 import { UserProfileService } from '../services/user-profile/user-profile.service';
 import { MessageDetailsDto } from '../data/dto/message-details.dto';
 import {SplitOrStealChoices} from '../data/enums/split-or-steal-choices';
-
-const CHAT_DURATION = 10 * 1000;
+import {GameConfing} from '../config/game.config';
 
 @WebSocketGateway({
     cors: {
@@ -41,8 +40,9 @@ export class ChatRoomGateway
 
         try {
             const decodedToken = await this.authService.verifyIdToken(token);
-            console.log(decodedToken.uid);
             const roomId = this.chatService.joinNewUser(client, decodedToken.uid);
+
+            this.chatService.addMoneyPotToRoom(roomId, GameConfing.GAME_TAX);
 
             if (this.chatService.isRoomFull(roomId)) {
                 await this.startGame(roomId);
@@ -59,6 +59,7 @@ export class ChatRoomGateway
         const timeout = this.chatService.getTimeout(roomId);
 
         try {
+            this.chatService.deleteRoomPot(roomId);
             this.chatService.removeSocketToUserMapping(client.id);
             this.chatService.removeUserFromRoom(client.id);
             if (timeout) {
@@ -77,11 +78,11 @@ export class ChatRoomGateway
 
         await this.chatService.createConversationDocument(roomId);
 
-        this.server.emit('start-game', { usersDetails, chatDuration: CHAT_DURATION });
+        this.server.emit('start-game', { usersDetails, chatDuration: GameConfing.CHAT_DURATION });
 
         const interval = setTimeout(() => {
             this.endGame(roomId);
-        }, CHAT_DURATION);
+        }, GameConfing.CHAT_DURATION);
 
         this.chatService.addTimeout(roomId, interval);
     }
@@ -89,7 +90,15 @@ export class ChatRoomGateway
     async endGame(roomId: string) {
         const roomUsers = this.chatService.getRoomUsers(roomId);
         const playerChoices = await this.chatService.getPlayersChoices(roomId);
-        this.server.to(roomId).emit('end-game', playerChoices);
+        const {
+            player1ResultBalance,
+            player2ResultBalance
+        } = await this.chatService.computePlayersNewBalances(roomId, playerChoices);
+
+        this.server.to(roomId).emit('end-game', {
+            player1: { ...playerChoices.player1, resultBalance: player1ResultBalance },
+            player2: { ...playerChoices.player2, resultBalance: player2ResultBalance }
+        });
 
         try {
             this.chatService.cancelTimeout(roomId);

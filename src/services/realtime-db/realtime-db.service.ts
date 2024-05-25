@@ -25,6 +25,11 @@ export class RealtimeDbService {
         return Object.keys(mapObject).find(key => mapObject[key] === stripeCustomerId);
     }
 
+    async getUserBalance(firebaseUserId: string): Promise<number> {
+        const balanceDocRef = ref(this.realtimeDb, `/users-balance/${firebaseUserId}`);
+        return (await get(balanceDocRef)).val();
+    }
+
     async updateUserBalance(userId: string, creditToAdd: number, addition = false) {
         const balanceDocRef = ref(this.realtimeDb, `/users-balance/${userId}`);
 
