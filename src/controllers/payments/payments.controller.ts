@@ -1,19 +1,13 @@
 import {
-    Body,
     Controller,
     Get,
     Headers,
-    HttpException,
     Post,
     Query,
     Request,
     UseGuards,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import {
-    CreatePaymentMethodDto,
-    PaymentMethodDto,
-} from '../../data/dto/payment-method.dto';
 import { VerifyAuthTokenGuard } from '../../guards/verify-auth-token.guard';
 import StripeConfig from '../../config/stripe.config';
 import {RealtimeDbService} from '../../services/realtime-db/realtime-db.service';
@@ -49,9 +43,10 @@ export class PaymentsController {
     async getSessionStatusController(@Query('session-id') sessionId: string) {
         const session = await this.stripeConfig.getStripeApp().checkout.sessions.retrieve(sessionId);
 
+        console.log(session);
         return {
+            paymentAmount: session.amount_total / 100,
             status: session.status,
-            customer_email: session.customer_details.email
         };
     }
 }
