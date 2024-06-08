@@ -60,13 +60,24 @@ export class GameRoomGateway
     async startGame(roomId: string) {
         const {roomPot, usersDetails } = await this.gameService.prepareGameStart(roomId);
 
-        this.server.emit('start-game', {
+        this.server.to(roomId).emit('start-game', {
             roundDuration: GameConfing.ROUND_DURATION,
             roomPot,
             usersDetails,
         });
 
-        await this.startGoldenBallsRound(roomId);
+        await this.prepareGoldenBallsRound(roomId);
+    }
+
+    async prepareGoldenBallsRound(roomId: string) {
+        this.server.to(roomId).emit('prepare-golden-balls-round', {
+            preparationDuration: GameConfing.PREPARE_ROUND_DURATION,
+        });
+
+        const timeout = setTimeout(() => {
+            this.startGoldenBallsRound(roomId);
+            clearTimeout(timeout);
+        }, GameConfing.PREPARE_ROUND_DURATION);
     }
 
     async startGoldenBallsRound(roomId: string) {
@@ -78,7 +89,7 @@ export class GameRoomGateway
 
         for (const socketId of roomSockets) {
             const userGoldenBallsAssignment = ballsAssignments.find(({ playerId }) => playerId === socketId);
-            this.server.to(socketId).emit('start-golden-ball-round', {
+            this.server.to(socketId).emit('start-golden-balls-round', {
                 userGoldenBallsAssignment: userGoldenBallsAssignment.balls,
                 shownBallsAssignments
             });
@@ -105,7 +116,7 @@ export class GameRoomGateway
             return;
         }
 
-        await this.startGoldenBallsRound(roomId);
+        await this.prepareGoldenBallsRound(roomId);
     }
 
     async prepareSplitOrSteal(roomId: string) {
@@ -116,13 +127,14 @@ export class GameRoomGateway
 
         this.server.emit('prepare-split-or-steal', {
             finalists,
+            preparationDuration: GameConfing.PREPARE_ROUND_DURATION,
             recalculatedRoomPotObject
         });
 
         const timeout = setTimeout(() => {
             this.startSplitOrSteal(roomId);
             clearTimeout(timeout);
-        }, GameConfing.PREPARE_SPLIT_OR_STEAL_DURATION);
+        }, GameConfing.PREPARE_ROUND_DURATION);
     }
 
     async startSplitOrSteal(roomId: string) {
