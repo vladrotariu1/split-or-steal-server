@@ -67,14 +67,14 @@ export class MoneyPotService {
         }
     }
 
-    recalculateRoomPotWithRemainedGoldenBalls(roomId: string) {
+    recalculateRoomPotWithRemainedGoldenBalls(roomId: string, subtractKillerBallsBalance: boolean = true) {
         const remainedGoldenBalls = this.goldenBallsService.getRemainedGoldenBalls(roomId);
         const killerBallsRemained = remainedGoldenBalls.filter(goldenBall => goldenBall.value === -1).length;
         const killerBallsRemovedBalance = killerBallsRemained === 0 ? 0 : Math.pow(2, killerBallsRemained);
         const goldenBallsBalance = remainedGoldenBalls.reduce(
             (sum, currentBall) => sum + (currentBall.value === -1 ? 0 : currentBall.value)
             , 0);
-        const newRoomPot = goldenBallsBalance - killerBallsRemovedBalance
+        const newRoomPot = subtractKillerBallsBalance ? goldenBallsBalance - killerBallsRemovedBalance : goldenBallsBalance;
 
         this.gamePersistence.setRoomToPotMapping(roomId, newRoomPot);
 

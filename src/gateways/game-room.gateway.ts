@@ -11,6 +11,7 @@ import { GameService } from '../services/chat/game.service';
 import { UserProfileService } from '../services/user-profile/user-profile.service';
 import { SplitOrStealChoices } from '../data/enums/split-or-steal-choices';
 import { GameConfing } from '../config/game.config';
+import {GoldenBall} from '../data/models/golden-ball';
 
 @WebSocketGateway({
     cors: {
@@ -58,10 +59,10 @@ export class GameRoomGateway
     }
 
     async startGame(roomId: string) {
-        const {roomPot, usersDetails } = await this.gameService.prepareGameStart(roomId);
+        const { numberOfKillerBalls, roomPot, usersDetails } = await this.gameService.prepareGameStart(roomId);
 
         this.server.to(roomId).emit('start-game', {
-            roundDuration: GameConfing.ROUND_DURATION,
+            numberOfKillerBalls,
             roomPot,
             usersDetails,
         });
@@ -90,6 +91,7 @@ export class GameRoomGateway
         for (const socketId of roomSockets) {
             const userGoldenBallsAssignment = ballsAssignments.find(({ playerId }) => playerId === socketId);
             this.server.to(socketId).emit('start-golden-balls-round', {
+                roundDuration: GameConfing.ROUND_DURATION,
                 userGoldenBallsAssignment: userGoldenBallsAssignment.balls,
                 shownBallsAssignments
             });
@@ -104,10 +106,21 @@ export class GameRoomGateway
     }
 
     async endGoldenBallsRound(roomId: string) {
-        const { kickedUserAppId, kickedUserSocketId } = await this.gameService.handleGoldenBallsRoundEnd(roomId);
+        const {
+            ballsAssignments,
+            kickedUserAppId,
+            kickedUserSocketId,
+            killerBallsRemained,
+            newRoomPot
+        } = await this.gameService.handleGoldenBallsRoundEnd(roomId);
         const socket = this.server.sockets.sockets.get(kickedUserSocketId);
 
-        this.server.to(roomId).emit('kicked', kickedUserAppId);
+        this.server.to(roomId).emit('end-golden-balls-round', {
+            ballsAssignments,
+            kickedUserId: kickedUserAppId,
+            killerBallsRemained,
+            newRoomPot
+        });
 
         socket.disconnect();
 
@@ -125,7 +138,7 @@ export class GameRoomGateway
             recalculatedRoomPotObject
         } = await this.gameService.prepareSplitOrSteal(roomId);
 
-        this.server.emit('prepare-split-or-steal', {
+        this.server.to(roomId).emit('prepare-split-or-steal', {
             finalists,
             preparationDuration: GameConfing.PREPARE_ROUND_DURATION,
             recalculatedRoomPotObject
@@ -190,5 +203,16 @@ export class GameRoomGateway
     @SubscribeMessage('golden-balls-kick-decision')
     async handleGoldenBallsKickDecision(client: Socket, payload: string) {
         await this.gameService.setGoldenBallsKickDecision(client.id, payload);
+    }
+
+    @SubscribeMessage('declare-golden-balls-value')
+    handleDeclareGoldenBalls(client: Socket, payload: GoldenBall[]) {
+        const roomId = this.gameService.getUserRoom(client.id);
+        const userId = this.gameService.getUserIdBySocketId(client.id);
+
+        this.server.to(roomId).emit('user-golden-balls-declaration', {
+            userId,
+            goldenBalls: payload
+        });
     }
 }

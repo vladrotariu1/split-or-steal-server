@@ -65,10 +65,12 @@ export class GoldenBallsService {
     assignInitialBalls(roomId: string) {
         const playersSocketsIds = this.gamePersistence.getGameRoomUsersSockets(roomId);
         const generatedGoldenBalls = this.generateRoomPotBalls(roomId);
+        const numberOfKillerBalls = generatedGoldenBalls.filter(goldenBall => goldenBall.value === -1).length;
 
         const ballsAssignment = this.createGoldenBallsAssignment(generatedGoldenBalls, playersSocketsIds);
 
         this.gamePersistence.setRoomToPotBallsMapping(roomId, ballsAssignment);
+        return { numberOfKillerBalls };
     }
 
     chooseBallsToShow(roomId: string) {

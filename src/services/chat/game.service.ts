@@ -105,14 +105,27 @@ export class GameService {
     async handleGoldenBallsRoundEnd(roomId: string) {
         const kickedUserSocketId = await this.goldenBallsService.getKickedUser(roomId);
         const kickedUserAppId = this.gamePersistence.getUserBySocketId(kickedUserSocketId);
+        const ballsAssignments = this.gamePersistence
+            .getRoomToPotBallsMapping(roomId)
+            .map(ballsAssignment => ({
+                ...ballsAssignment,
+                playerId: this.gamePersistence.getUserBySocketId(ballsAssignment.playerId)
+            }));
 
         this.goldenBallsService.removeUserBalls(kickedUserSocketId);
+        const {
+            killerBallsRemained,
+            newRoomPot
+        } = this.moneyPotService.recalculateRoomPotWithRemainedGoldenBalls(roomId);
 
         await this.subtractFromUserBalance(kickedUserAppId, GameConfing.GAME_TAX);
 
         return {
+            ballsAssignments,
             kickedUserAppId,
             kickedUserSocketId,
+            killerBallsRemained,
+            newRoomPot
         };
     }
 
@@ -136,9 +149,9 @@ export class GameService {
         const roomPot = this.moneyPotService.addPlatformMoneyToRoomPot(roomId);
 
         await this.createConversationDocument(roomId);
-        this.goldenBallsService.assignInitialBalls(roomId);
+        const {numberOfKillerBalls} = this.goldenBallsService.assignInitialBalls(roomId);
 
-        return { usersDetails, roomPot };
+        return { numberOfKillerBalls, usersDetails, roomPot };
     }
 
     prepareGoldenBallsRoundStart(roomId: string) {
@@ -185,6 +198,10 @@ export class GameService {
         }
 
         this.gamePersistence.removeSocketToGameRoomMapping(socketId);
+    }
+
+    getUserIdBySocketId(socketId: string) {
+        return this.gamePersistence.getUserBySocketId(socketId);
     }
 
     getUserRoom(socketId: string) {
@@ -238,7 +255,11 @@ export class GameService {
     }
 
     async setGoldenBallsKickDecision(socketId: string, payload: string) {
-        await this.goldenBallsService.setGoldenBallsKickDecision(socketId, payload);
+        try {
+            await this.goldenBallsService.setGoldenBallsKickDecision(socketId, payload);
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     incrementRoundNumber(roomId: string) {
