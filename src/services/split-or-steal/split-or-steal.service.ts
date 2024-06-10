@@ -56,6 +56,18 @@ export class SplitOrStealService {
         });
     }
 
+    async getFinalistsIds(roomId: string) {
+        const docRef = this.gamePersistence.getRoomToDocumentMapping(roomId);
+        const docSnap = await getDoc(docRef);
+        const player1Id = docSnap.data().finalists.player1Id;
+        const player2Id = docSnap.data().finalists.player2Id;
+
+        return {
+            player1Id,
+            player2Id
+        }
+    }
+
     async writeChoiceToDocument(socketId: string, choice: SplitOrStealChoices) {
         const clientId = this.gamePersistence.getUserBySocketId(socketId);
         const roomId = this.gamePersistence.getRoomIdBySocketId(socketId);

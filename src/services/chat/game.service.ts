@@ -136,10 +136,14 @@ export class GameService {
             player1ResultBalance,
             player2ResultBalance
         } = await this.moneyPotService.computePlayersNewBalances(roomId, playerChoices);
+        const {
+            player1Id,
+            player2Id
+        } = await this.splitOrStealService.getFinalistsIds(roomId);
 
         return {
-            player1: { ...playerChoices.player1, resultBalance: player1ResultBalance },
-            player2: { ...playerChoices.player2, resultBalance: player2ResultBalance },
+            player1: { ...playerChoices.player1, resultBalance: player1ResultBalance, id: player1Id },
+            player2: { ...playerChoices.player2, resultBalance: player2ResultBalance, id: player2Id },
             roomUsers,
         }
     }
