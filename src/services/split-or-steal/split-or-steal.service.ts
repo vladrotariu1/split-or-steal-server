@@ -12,8 +12,8 @@ export class SplitOrStealService {
         const docRef = this.gamePersistence.getRoomToDocumentMapping(roomId);
         const docSnap = await getDoc(docRef);
 
-        const player1Id = docSnap.data().player1Id;
-        const player2Id = docSnap.data().player2Id;
+        const player1Id = docSnap.data().finalists.player1Id;
+        const player2Id = docSnap.data().finalists.player2Id;
 
         const player1Choice = docSnap.data().finalists.player1Choice || SplitOrStealChoices.STEAL;
         const player2Choice = docSnap.data().finalists.player2Choice || SplitOrStealChoices.STEAL;
