@@ -128,9 +128,11 @@ export class GamePersistence {
 
     removeGameRoomToUsersSocketsMapping(roomId: string) {
         this.gameRoomToUsersSocketsMap.delete(roomId);
+        console.log('removing users room', this.gameRoomToUsersSocketsMap);
     }
 
     setGameRoomToUsersSocketsMapping(roomId: string, usersSocketIds: string[]) {
         this.gameRoomToUsersSocketsMap.set(roomId, usersSocketIds);
+        console.log('new user added in room', this.gameRoomToUsersSocketsMap);
     }
 }

@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import {MessageDetailsDto} from '../../data/dto/message-details.dto';
-import crypto from 'crypto';
 import {arrayUnion, updateDoc} from 'firebase/firestore';
 import {GamePersistence} from '../../persistence/game.persistence';
 

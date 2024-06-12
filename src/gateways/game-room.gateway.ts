@@ -192,7 +192,9 @@ export class GameRoomGateway
         const message = await this.gameService.createMessage(client.id, payload);
         const roomId = this.gameService.getUserRoom(client.id);
 
-        this.server.to(roomId).emit('message', message);
+        console.log(`Emitted message ${payload} to room ${roomId}`);
+
+        this.server.emit('message', message);
     }
 
     @SubscribeMessage('split-or-steal-decision')

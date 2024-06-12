@@ -116,7 +116,7 @@ export class GameService {
         const {
             killerBallsRemained,
             newRoomPot
-        } = this.moneyPotService.recalculateRoomPotWithRemainedGoldenBalls(roomId);
+        } = this.moneyPotService.recalculateRoomPotWithRemainedGoldenBalls(roomId, false);
 
         await this.subtractFromUserBalance(kickedUserAppId, GameConfing.GAME_TAX);
 
