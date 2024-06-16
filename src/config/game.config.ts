@@ -1,7 +1,7 @@
 export class GameConfing {
     public static readonly ROOM_SIZE = 4; // Maximum number of players in a Room
 
-    public static readonly ROUND_DURATION = 2 * 60 * 1000;
+    public static readonly ROUND_DURATION = 1 * 60 * 1000;
     public static readonly PREPARE_ROUND_DURATION = 10 * 1000;
 
     public static readonly GAME_TAX = 5;

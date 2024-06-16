@@ -16,6 +16,10 @@ import { GoldenBallsService } from './services/golden-balls/golden-balls.service
 import { MoneyPotService } from './services/money-pot/money-pot.service';
 import { MessageService } from './services/message/message.service';
 import { SplitOrStealService } from './services/split-or-steal/split-or-steal.service';
+import { OpenaiAssistantService } from './services/openai-assistant/openai-assistant.service';
+import {OpenaiConfig} from './config/openai.config';
+import { GameAssistantController } from './controllers/game-assistant/game-assistant.controller';
+import {WebSocketConfig} from './config/web-socket.config';
 
 @Module({
     imports: [HttpModule],
@@ -24,6 +28,7 @@ import { SplitOrStealService } from './services/split-or-steal/split-or-steal.se
         UserProfileController,
         PaymentsController,
         StripeWebhookController,
+        GameAssistantController,
     ],
     providers: [
         FireBaseConfig,
@@ -38,6 +43,9 @@ import { SplitOrStealService } from './services/split-or-steal/split-or-steal.se
         MoneyPotService,
         MessageService,
         SplitOrStealService,
+        OpenaiConfig,
+        OpenaiAssistantService,
+        WebSocketConfig
     ],
 })
 export class AppModule {}

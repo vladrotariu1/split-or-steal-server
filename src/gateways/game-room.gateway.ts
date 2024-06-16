@@ -1,6 +1,6 @@
 import {
     OnGatewayConnection,
-    OnGatewayDisconnect,
+    OnGatewayDisconnect, OnGatewayInit,
     SubscribeMessage,
     WebSocketGateway,
     WebSocketServer,
@@ -8,10 +8,10 @@ import {
 import { Socket, Server } from 'socket.io';
 import { AuthService } from '../services/auth/auth.service';
 import { GameService } from '../services/chat/game.service';
-import { UserProfileService } from '../services/user-profile/user-profile.service';
 import { SplitOrStealChoices } from '../data/enums/split-or-steal-choices';
 import { GameConfing } from '../config/game.config';
 import {GoldenBall} from '../data/models/golden-ball';
+import {WebSocketConfig} from '../config/web-socket.config';
 
 @WebSocketGateway({
     cors: {
@@ -19,7 +19,7 @@ import {GoldenBall} from '../data/models/golden-ball';
     },
 })
 export class GameRoomGateway
-    implements OnGatewayConnection, OnGatewayDisconnect
+    implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
     @WebSocketServer()
     server: Server;
@@ -27,8 +27,12 @@ export class GameRoomGateway
     constructor(
         private authService: AuthService,
         private gameService: GameService,
-        private userProfileService: UserProfileService,
+        private wsConfig: WebSocketConfig
     ) {}
+
+    afterInit(server: Server) {
+        this.wsConfig.setWsServer(server);
+    }
 
     async handleConnection(client: Socket, ...args: any[]) {
         const token = client.handshake.headers.authorization;
